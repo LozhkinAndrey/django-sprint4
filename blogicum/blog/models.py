@@ -6,6 +6,7 @@ from core.models import PublishedAndCreatedAt
 
 User = get_user_model()
 
+
 class Category(PublishedAndCreatedAt):
     title = models.CharField('Заголовок', max_length=FIELDS_MAX_LENGTH)
     description = models.TextField('Описание')
@@ -15,6 +16,7 @@ class Category(PublishedAndCreatedAt):
                   'латиницы, цифры, дефис и подчёркивание.',
         unique=True
     )
+
     class Meta(PublishedAndCreatedAt.Meta):
         verbose_name = 'категория'
         verbose_name_plural = 'Категории'
