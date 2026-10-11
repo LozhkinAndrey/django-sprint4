@@ -103,3 +103,5 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'blog:index'
 
 LOGOUT_REDIRECT_URL = 'blog:index'
+
+MEDIA_ROOT = BASE_DIR / 'media'

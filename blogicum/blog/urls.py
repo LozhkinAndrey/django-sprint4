@@ -19,5 +19,5 @@ urlpatterns = [
          name='category_posts'),
     path('', PostListView.as_view(), name='index'),
     path('profile/<slug:username>', profile, name='profile'),
-    path('edit/', UserUpdateView.as_view(), name='edit_profile')
+    path('edit/', UserUpdateView.as_view(), name='edit_profile'),
 ]

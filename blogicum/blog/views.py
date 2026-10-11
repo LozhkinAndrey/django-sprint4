@@ -32,7 +32,7 @@ def filtered_select_posts(posts):
 #     return render(request, 'blog/index.html', {'post_list': post_list})
 
 
-class PostListView(ListView):
+class PostListView(ListView):  # TODO: публикуются все, в том числе с будущей датой, при переходе на страницу пуликации - 404
     model = Post
     ordering = 'id'
     paginate_by = 10

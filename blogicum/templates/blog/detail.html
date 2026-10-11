@@ -4,6 +4,11 @@
 {% endblock %}
 {% block content %}
   <article>
+    <p class="card-image">  
+        {% if post.image %}
+          <img src="{{ post.image.url }}" height="100">
+        {% endif %}
+    </p>
     <p>{{ post.pub_date|date:"d E Y" }} | {% if post.location %}{{ post.location.name }}{% else %}Планета Земля{% endif %}<br>
       <small>От автора @{{ post.author.username }} в категории {% include "includes/category_link.html" %}</small></p>
     <h3>{{ post.title }}</h3>

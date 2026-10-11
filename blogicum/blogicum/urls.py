@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include, reverse_lazy
 from django.contrib.auth.forms import UserCreationForm
@@ -20,7 +22,7 @@ urlpatterns = [
         name='registration',
     ),
     path('profile/<username>/', views.profile, name='profile'),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 handler404 = 'core.views.page_not_found'
 handler500 = 'core.views.internal_server_error'
