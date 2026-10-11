@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import User
+from .models import User, Post
 
 
 class UserForm(forms.ModelForm):
@@ -10,3 +10,20 @@ class UserForm(forms.ModelForm):
 
     def clean(self):
         super().clean()
+
+
+class PostCreateForm(forms.ModelForm):
+    class Meta:
+        model = Post
+        exclude = ('author',)
+        widgets = {
+            'pub_date': forms.DateTimeInput(
+                attrs={'type': 'datetime-local'},
+                format='%Y-%m-%d %H:%M',
+            ),
+            'location': forms.Select(),
+            'category': forms.Select(),
+        }
+
+    def clean(self):
+        return super().clean()

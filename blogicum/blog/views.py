@@ -1,13 +1,13 @@
-from django.contrib.auth.mixins import UserPassesTestMixin
+from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render
 from django.utils.timezone import now
-from django.urls import reverse_lazy
-from django.views.generic import UpdateView, ListView
+from django.urls import reverse_lazy, reverse
+from django.views.generic import UpdateView, ListView, CreateView
 
 # from core.constants import POSTS_BY_PAGE
 from .models import Category, Post, User
-from .forms import UserForm
+from .forms import UserForm, PostCreateForm
 
 
 class OnlyAuthorMixin(UserPassesTestMixin):
@@ -22,7 +22,7 @@ def filtered_select_posts(posts):
         'author', 'category', 'location'
     ).filter(
         is_published=True,
-        pub_date__lt=now(),
+        pub_date__lte=now(),
         category__is_published=True,
     ).order_by('id')
 
@@ -34,6 +34,7 @@ def filtered_select_posts(posts):
 
 class PostListView(ListView):  # TODO: публикуются все, в том числе с будущей датой, при переходе на страницу пуликации - 404
     model = Post
+    queryset = Post.objects.filter(pub_date__lte=now(), is_published=True)
     ordering = 'id'
     paginate_by = 10
     template_name = 'blog/index.html'
@@ -80,3 +81,19 @@ class UserUpdateView(OnlyAuthorMixin, UpdateView):
 
     def get_object(self, queryset=None):
         return self.request.user
+
+
+class PostCreateView(LoginRequiredMixin, CreateView):
+    model = Post
+    form_class = PostCreateForm
+    template_name = 'blog/create.html'
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse(
+            'blog:profile',
+            kwargs={'username': self.request.user.username},
+        )
