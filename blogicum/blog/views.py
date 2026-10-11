@@ -1,10 +1,11 @@
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render
 from django.utils.timezone import now
 from django.urls import reverse_lazy
-from django.contrib.auth.mixins import UserPassesTestMixin
-from django.views.generic import UpdateView
+from django.views.generic import UpdateView, ListView
 
-from core.constants import POSTS_BY_PAGE
+# from core.constants import POSTS_BY_PAGE
 from .models import Category, Post, User
 from .forms import UserForm
 
@@ -23,12 +24,19 @@ def filtered_select_posts(posts):
         is_published=True,
         pub_date__lt=now(),
         category__is_published=True,
-    )
+    ).order_by('id')
 
 
-def index(request):
-    post_list = filtered_select_posts(Post.objects)[:POSTS_BY_PAGE]
-    return render(request, 'blog/index.html', {'post_list': post_list})
+# def index(request):
+#     post_list = filtered_select_posts(Post.objects)[:POSTS_BY_PAGE]
+#     return render(request, 'blog/index.html', {'post_list': post_list})
+
+
+class PostListView(ListView):
+    model = Post
+    ordering = 'id'
+    paginate_by = 10
+    template_name = 'blog/index.html'
 
 
 def post_detail(request, post_id):
@@ -41,18 +49,25 @@ def post_detail(request, post_id):
 
 def category_posts(request, category_slug):
     category = get_object_or_404(
-        Category, slug=category_slug, is_published=True
+        Category, slug=category_slug, is_published=True,
     )
-    post_list = filtered_select_posts(category.posts)
+    posts = filtered_select_posts(category.posts)
+    paginator = Paginator(posts, 10)
+    page_number = request.GET.get('page')
+    post_list = paginator.get_page(page_number)
     return render(request, 'blog/category.html', {
         'post_list': post_list,
-        'category': category
+        'category': category,
+        'page_obj': post_list,
     })
 
 
 def profile(request, username):
     profile = get_object_or_404(User, username=username)
-    page_obj = Post.objects.filter(author=profile.id)
+    page_objs = Post.objects.filter(author=profile.id).order_by('id')
+    paginator = Paginator(page_objs, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
     context = {'profile': profile, 'page_obj': page_obj}
     return render(request, 'blog/profile.html', context)
 
