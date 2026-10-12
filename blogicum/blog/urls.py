@@ -4,6 +4,7 @@ from .views import (
     UserUpdateView,
     PostCreateView,
     PostListView,
+    PostUpdateView,
     # index,
     post_detail,
     category_posts,
@@ -22,4 +23,9 @@ urlpatterns = [
     path('profile/<slug:username>', profile, name='profile'),
     path('edit/', UserUpdateView.as_view(), name='edit_profile'),
     path('posts/create/', PostCreateView.as_view(), name='post_create'),
+    path(
+        'posts/<int:post_id>/edit/',
+        PostUpdateView.as_view(),
+        name='post_edit',
+    )
 ]

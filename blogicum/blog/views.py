@@ -1,6 +1,6 @@
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render,redirect
 from django.utils.timezone import now
 from django.urls import reverse_lazy, reverse
 from django.views.generic import UpdateView, ListView, CreateView
@@ -10,11 +10,24 @@ from .models import Category, Post, User
 from .forms import UserForm, PostCreateForm
 
 
-class OnlyAuthorMixin(UserPassesTestMixin):
+class OnlySelfMixin(UserPassesTestMixin):
 
     def test_func(self):
         obj = self.get_object()
         return obj.id == self.request.user.id
+
+
+class OnlyAuthorMixin(UserPassesTestMixin):
+
+    def test_func(self):
+        obj = self.get_object()
+        return obj is not None and obj.author_id == self.request.user.id
+
+    def handle_no_permission(self):
+        obj = self.get_object()
+        if obj:
+            return redirect('blog:post_detail', post_id=obj.id)
+        return redirect('blog:index')
 
 
 def filtered_select_posts(posts):
@@ -32,7 +45,7 @@ def filtered_select_posts(posts):
 #     return render(request, 'blog/index.html', {'post_list': post_list})
 
 
-class PostListView(ListView):  # TODO: публикуются все, в том числе с будущей датой, при переходе на страницу пуликации - 404
+class PostListView(ListView):
     model = Post
     queryset = Post.objects.filter(pub_date__lte=now(), is_published=True)
     ordering = 'id'
@@ -73,7 +86,7 @@ def profile(request, username):
     return render(request, 'blog/profile.html', context)
 
 
-class UserUpdateView(OnlyAuthorMixin, UpdateView):
+class UserUpdateView(OnlySelfMixin, UpdateView):
     model = User
     form_class = UserForm
     template_name = 'blog/user.html'
@@ -96,4 +109,20 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         return reverse(
             'blog:profile',
             kwargs={'username': self.request.user.username},
+        )
+
+
+class PostUpdateView(OnlyAuthorMixin, UpdateView):
+    model = Post
+    form_class = PostCreateForm
+    template_name = 'blog/create.html'
+
+    def get_object(self, queryset=None):
+        id = self.kwargs['post_id']
+        return get_object_or_404(Post, id=id)
+
+    def get_success_url(self):
+        return reverse(
+            'blog:post_detail',
+            kwargs={'post_id': self.object.id},
         )
