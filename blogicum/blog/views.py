@@ -1,13 +1,14 @@
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404, render,redirect
+from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.timezone import now
 from django.urls import reverse_lazy, reverse
 from django.views.generic import UpdateView, ListView, CreateView
 
 # from core.constants import POSTS_BY_PAGE
-from .models import Category, Post, User
-from .forms import UserForm, PostCreateForm
+from .models import Category, Comment, Post, User
+from .forms import CommentAddForm, UserForm, PostCreateForm
 
 
 class OnlySelfMixin(UserPassesTestMixin):
@@ -30,6 +31,19 @@ class OnlyAuthorMixin(UserPassesTestMixin):
         return redirect('blog:index')
 
 
+class OnlyCommentAuthorMixin(UserPassesTestMixin):
+
+    def test_func(self):
+        obj = self.get_object()
+        return obj is not None and obj.author == self.request.user.id
+
+    def handle_no_permission(self):
+        obj = self.get_object()
+        if obj:
+            return redirect('blog:post_detail', post_id=obj.post_id)
+        return redirect('blog:index')
+
+
 def filtered_select_posts(posts):
     return posts.select_related(
         'author', 'category', 'location'
@@ -47,7 +61,7 @@ def filtered_select_posts(posts):
 
 class PostListView(ListView):
     model = Post
-    queryset = Post.objects.filter(pub_date__lte=now(), is_published=True)
+    queryset = Post.objects.filter(pub_date__lte=now(), is_published=True)  # TODO: сделать join c Comment - колличество комментов поста в comments_count
     ordering = 'id'
     paginate_by = 10
     template_name = 'blog/index.html'
@@ -58,14 +72,27 @@ def post_detail(request, post_id):
         filtered_select_posts(Post.objects),
         id=post_id
     )
-    return render(request, 'blog/detail.html', {'post': post})
+    comments = get_object_or_404(
+        filtered_select_posts(Comment.objects),
+        post_id=post_id,
+    )
+    return render(
+        request,
+        'blog/detail.html',
+        {
+            'post': post,
+            'comments': comments,
+            'user': request.user,
+            'form': CommentAddForm,
+        },
+    )
 
 
 def category_posts(request, category_slug):
     category = get_object_or_404(
         Category, slug=category_slug, is_published=True,
     )
-    posts = filtered_select_posts(category.posts)
+    posts = filtered_select_posts(category.posts)  # TODO: сделать join c Comment - колличество комментов поста в comments_count
     paginator = Paginator(posts, 10)
     page_number = request.GET.get('page')
     post_list = paginator.get_page(page_number)
@@ -78,7 +105,7 @@ def category_posts(request, category_slug):
 
 def profile(request, username):
     profile = get_object_or_404(User, username=username)
-    page_objs = Post.objects.filter(author=profile.id).order_by('id')
+    page_objs = Post.objects.filter(author=profile.id).order_by('id')  # TODO: сделать join c Comment - колличество комментов поста в comments_count
     paginator = Paginator(page_objs, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -125,4 +152,34 @@ class PostUpdateView(OnlyAuthorMixin, UpdateView):
         return reverse(
             'blog:post_detail',
             kwargs={'post_id': self.object.id},
+        )
+
+
+@login_required
+def add_comment(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    form = CommentAddForm(request.POST)
+
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.post_id = post
+        comment.author = request.user
+        comment.save()
+
+    return redirect('blog:post_detail', post_id=post_id)
+
+
+class CommentEditView(OnlyCommentAuthorMixin, UpdateView):
+    model = Comment
+    form_class = CommentAddForm
+    template_name = 'blog/comment.html'
+
+    def get_object(self, queryset=None):
+        id = self.kwargs['comment_id']
+        return get_object_or_404(Comment, id=id)
+
+    def get_success_url(self):
+        return reverse(
+            'blog:post_detail',
+            kwargs={'post_id': self.object.post_id},
         )

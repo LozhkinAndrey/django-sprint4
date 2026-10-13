@@ -1,9 +1,10 @@
 from django import forms
 
-from .models import User, Post
+from .models import Comment, User, Post
 
 
 class UserForm(forms.ModelForm):
+
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'username', 'email']
@@ -13,6 +14,7 @@ class UserForm(forms.ModelForm):
 
 
 class PostCreateForm(forms.ModelForm):
+
     class Meta:
         model = Post
         exclude = ('author',)
@@ -27,3 +29,10 @@ class PostCreateForm(forms.ModelForm):
 
     def clean(self):
         return super().clean()
+
+
+class CommentAddForm(forms.ModelForm):
+
+    class Meta:
+        model = Comment
+        fields = ('text',)

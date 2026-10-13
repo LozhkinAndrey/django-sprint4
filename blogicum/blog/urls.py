@@ -3,9 +3,11 @@ from django.urls import path, include
 from .views import (
     UserUpdateView,
     PostCreateView,
+    CommentEditView,
     PostListView,
     PostUpdateView,
     # index,
+    add_comment,
     post_detail,
     category_posts,
     profile,
@@ -27,5 +29,15 @@ urlpatterns = [
         'posts/<int:post_id>/edit/',
         PostUpdateView.as_view(),
         name='post_edit',
-    )
+    ),
+    path(
+        'posts/<int:post_id>/comment/',
+        add_comment,
+        name='add_comment',
+    ),
+    path(
+        'posts/<int:post_id>/edit_comment/<int:comment_id>/',
+        CommentEditView.as_view(),
+        name='edit_comment',
+    ),
 ]

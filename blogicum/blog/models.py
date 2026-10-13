@@ -51,12 +51,14 @@ class Post(PublishedAndCreatedAt):
     )
     location = models.ForeignKey(
         Location,
-        blank=True, null=True,
+        blank=True,
+        null=True,
         on_delete=models.SET_NULL,
         verbose_name='Местоположение'
     )
     category = models.ForeignKey(
-        Category, null=True,
+        Category,
+        null=True,
         on_delete=models.SET_NULL,
         verbose_name='Категория'
     )
@@ -70,3 +72,23 @@ class Post(PublishedAndCreatedAt):
 
     def __str__(self) -> str:
         return self.title[:STR_LENGTH]
+
+
+class Comment(models.Model):
+    post_id = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        verbose_name='Публикация',
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор',
+    ),
+    created_at = models.DateTimeField('Добавлено', auto_now_add=True)
+    text = models.TextField('Текст')
+
+    class Meta:
+        verbose_name = 'комментарий'
+        verbose_name_plural = 'Комментарии'
+        ordering = ('-created_at', )
