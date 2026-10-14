@@ -4,7 +4,7 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.timezone import now
 from django.urls import reverse_lazy, reverse
-from django.views.generic import UpdateView, ListView, CreateView
+from django.views.generic import UpdateView, ListView, CreateView, DeleteView
 
 # from core.constants import POSTS_BY_PAGE
 from .models import Category, Comment, Post, User
@@ -170,6 +170,33 @@ def add_comment(request, post_id):
 
 
 class CommentEditView(OnlyCommentAuthorMixin, UpdateView):
+    model = Comment
+    form_class = CommentAddForm
+    template_name = 'blog/comment.html'
+
+    def get_object(self, queryset=None):
+        id = self.kwargs['comment_id']
+        return get_object_or_404(Comment, id=id)
+
+    def get_success_url(self):
+        return reverse(
+            'blog:post_detail',
+            kwargs={'post_id': self.object.post_id},
+        )
+
+
+class PostDeleteView(OnlyAuthorMixin, DeleteView):
+    model = Post
+    form_class = PostCreateForm
+    template_name = 'blog/create.html'
+    success_url = reverse_lazy('blog:index')
+
+    def get_object(self, queryset=None):
+        id = self.kwargs['post_id']
+        return get_object_or_404(Post, id=id)
+
+
+class CommentDeleteView(OnlyCommentAuthorMixin, DeleteView):
     model = Comment
     form_class = CommentAddForm
     template_name = 'blog/comment.html'
