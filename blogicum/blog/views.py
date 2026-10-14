@@ -35,7 +35,7 @@ class OnlyCommentAuthorMixin(UserPassesTestMixin):
 
     def test_func(self):
         obj = self.get_object()
-        return obj is not None and obj.author == self.request.user.id
+        return obj is not None and obj.author == self.request.user
 
     def handle_no_permission(self):
         obj = self.get_object()
@@ -52,6 +52,10 @@ def filtered_select_posts(posts):
         pub_date__lte=now(),
         category__is_published=True,
     ).order_by('id')
+
+
+def filtered_select_comments(comments):
+    return comments.select_related('post', 'author').order_by('created_at')
 
 
 # def index(request):
@@ -72,10 +76,10 @@ def post_detail(request, post_id):
         filtered_select_posts(Post.objects),
         id=post_id
     )
-    comments = get_object_or_404(
-        filtered_select_posts(Comment.objects),
-        post_id=post_id,
-    )
+    comments = filtered_select_comments(
+        Comment.objects,
+    ).filter(post_id=post_id)
+
     return render(
         request,
         'blog/detail.html',
@@ -162,7 +166,7 @@ def add_comment(request, post_id):
 
     if form.is_valid():
         comment = form.save(commit=False)
-        comment.post_id = post
+        comment.post = post
         comment.author = request.user
         comment.save()
 
@@ -187,7 +191,6 @@ class CommentEditView(OnlyCommentAuthorMixin, UpdateView):
 
 class PostDeleteView(OnlyAuthorMixin, DeleteView):
     model = Post
-    form_class = PostCreateForm
     template_name = 'blog/create.html'
     success_url = reverse_lazy('blog:index')
 
@@ -198,7 +201,6 @@ class PostDeleteView(OnlyAuthorMixin, DeleteView):
 
 class CommentDeleteView(OnlyCommentAuthorMixin, DeleteView):
     model = Comment
-    form_class = CommentAddForm
     template_name = 'blog/comment.html'
 
     def get_object(self, queryset=None):

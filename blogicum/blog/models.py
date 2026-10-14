@@ -75,7 +75,7 @@ class Post(PublishedAndCreatedAt):
 
 
 class Comment(models.Model):
-    post_id = models.ForeignKey(
+    post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
         verbose_name='Публикация',
@@ -84,7 +84,7 @@ class Comment(models.Model):
         User,
         on_delete=models.CASCADE,
         verbose_name='Автор',
-    ),
+    )
     created_at = models.DateTimeField('Добавлено', auto_now_add=True)
     text = models.TextField('Текст')
 
