@@ -191,15 +191,11 @@ class CommentEditView(OnlyCommentAuthorMixin, UpdateView):
         )
 
 
-class PostDeleteView(OnlyAuthorMixin, DeleteView):  #TODO: не удалаяет, не подставляет в шаблон данные
+class PostDeleteView(OnlyAuthorMixin, DeleteView):
     model = Post
-    form_class = PostCreateForm
     template_name = 'blog/create.html'
     success_url = reverse_lazy('blog:index')
-
-    def get_object(self, queryset=None):
-        id = self.kwargs['post_id']
-        return get_object_or_404(Post, id=id)
+    pk_url_kwarg = 'post_id'
 
 
 class CommentDeleteView(OnlyCommentAuthorMixin, DeleteView):
