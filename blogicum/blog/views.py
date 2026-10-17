@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils.timezone import now
@@ -50,7 +51,7 @@ def filtered_select_posts(posts):
         is_published=True,
         pub_date__lte=now(),
         category__is_published=True,
-    ).order_by('id')
+    ).annotate(comments_count=Count('comments')).order_by('id')
 
 
 def filtered_select_comments(comments):
@@ -59,7 +60,10 @@ def filtered_select_comments(comments):
 
 class PostListView(ListView):
     model = Post
-    queryset = Post.objects.filter(pub_date__lte=now(), is_published=True)  # TODO: сделать join c Comment - колличество комментов поста в comments_count
+    queryset = Post.objects.filter(
+        pub_date__lte=now(),
+        is_published=True,
+    ).annotate(comments_count=Count('comments'))
     ordering = 'id'
     paginate_by = 10
     template_name = 'blog/index.html'
@@ -90,7 +94,7 @@ def category_posts(request, category_slug):
     category = get_object_or_404(
         Category, slug=category_slug, is_published=True,
     )
-    posts = filtered_select_posts(category.posts)  # TODO: сделать join c Comment - колличество комментов поста в comments_count
+    posts = filtered_select_posts(category.posts)
     paginator = Paginator(posts, 10)
     page_number = request.GET.get('page')
     post_list = paginator.get_page(page_number)
@@ -103,7 +107,11 @@ def category_posts(request, category_slug):
 
 def profile(request, username):
     profile = get_object_or_404(User, username=username)
-    page_objs = Post.objects.filter(author=profile.id).order_by('id')  # TODO: сделать join c Comment - колличество комментов поста в comments_count
+    page_objs = Post.objects.filter(
+        author=profile.id,
+    ).annotate(
+        comments_count=Count('comments'),
+    ).order_by('id')
     paginator = Paginator(page_objs, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)

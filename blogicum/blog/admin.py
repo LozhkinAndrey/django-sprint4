@@ -23,6 +23,7 @@ class UserAdmin(BaseUserAdmin):
     def posts_count(self, obj):
         return obj.posts.count()
 
+
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     search_fields = ('text', )
@@ -51,5 +52,6 @@ class LocationAdmin(admin.ModelAdmin):
     list_editable = ('is_published', )
     list_filter = ('created_at', )
     empty_value_display = '-пусто-'
+
 
 admin.site.unregister(Group)
