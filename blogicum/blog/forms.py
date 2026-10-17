@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Comment, User, Post
+from .models import Comment, Post, User
 
 
 class UserForm(forms.ModelForm):

@@ -1,14 +1,13 @@
-from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404, render, redirect
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
 from django.utils.timezone import now
-from django.urls import reverse_lazy, reverse
-from django.views.generic import UpdateView, ListView, CreateView, DeleteView
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
-# from core.constants import POSTS_BY_PAGE
+from .forms import CommentAddForm, PostCreateForm, UserForm
 from .models import Category, Comment, Post, User
-from .forms import CommentAddForm, UserForm, PostCreateForm
 
 
 class OnlySelfMixin(UserPassesTestMixin):
@@ -56,11 +55,6 @@ def filtered_select_posts(posts):
 
 def filtered_select_comments(comments):
     return comments.select_related('post', 'author').order_by('created_at')
-
-
-# def index(request):
-#     post_list = filtered_select_posts(Post.objects)[:POSTS_BY_PAGE]
-#     return render(request, 'blog/index.html', {'post_list': post_list})
 
 
 class PostListView(ListView):
@@ -189,8 +183,9 @@ class CommentEditView(OnlyCommentAuthorMixin, UpdateView):
         )
 
 
-class PostDeleteView(OnlyAuthorMixin, DeleteView):
+class PostDeleteView(OnlyAuthorMixin, DeleteView):  #TODO: не удалаяет, не подставляет в шаблон данные
     model = Post
+    form_class = PostCreateForm
     template_name = 'blog/create.html'
     success_url = reverse_lazy('blog:index')
 
