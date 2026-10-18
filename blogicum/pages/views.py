@@ -1,19 +1,40 @@
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.shortcuts import render
-from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from django.views.generic import (
+    CreateView,
+    DetailView,
+    ListView,
+    TemplateView,
+    UpdateView,
+)
 
 from .forms import StaticPageForm
 from .models import StaticPage
 
 
-def about(request):
+def csrf_failure(request, reason=''):
+    """Конструирует представление для ошибки 403."""
+    return render(request, 'pages/403csrf.html', status=403)
+
+
+def page_not_found(request, exception):
+    """Конструирует представление для ошибки 404."""
+    return render(request, 'pages/404.html', status=404)
+
+
+def internal_server_error(request):
+    """Конструирует представление для ошибки 500."""
+    return render(request, 'pages/500.html', status=500)
+
+
+class AboutView(TemplateView):
     """Конструирует представление статичной страницы about."""
-    return render(request, 'pages/about.html')
+    template_name = 'pages/about.html'
 
 
-def rules(request):
+class RulesView(TemplateView):
     """Конструирует представление статичной страницы rules."""
-    return render(request, 'pages/rules.html')
+    template_name = 'pages/rules.html'
 
 
 class StaticPageView(DetailView):

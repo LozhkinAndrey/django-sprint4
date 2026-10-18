@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import Paginator
 from django.db.models import Count
+from django.http import HttpResponseNotFound
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils.timezone import now
@@ -15,6 +16,8 @@ class OnlySelfMixin(UserPassesTestMixin):
     """Миксин проверки собственника профиля."""
 
     def test_func(self):
+        if not self.request.user.is_authenticated:
+            return False
         obj = self.get_object()
         return obj.id == self.request.user.id
 
@@ -47,15 +50,17 @@ class OnlyCommentAuthorMixin(UserPassesTestMixin):
         return redirect('blog:index')
 
 
-def filtered_select_posts(posts):
-    """Фильтр публикаций."""
-    return posts.select_related(
-        'author', 'category', 'location'
-    ).filter(
-        is_published=True,
-        pub_date__lte=now(),
-        category__is_published=True,
-    ).annotate(comments_count=Count('comments')).order_by('id')
+def filtered_select_posts(posts, for_detail_view=False):
+    qs = posts.select_related('author', 'category', 'location')
+
+    if not for_detail_view:
+        qs = qs.filter(
+            is_published=True,
+            pub_date__lte=now(),
+            category__is_published=True,
+        )
+
+    return qs.annotate(comments_count=Count('comments')).order_by('-pub_date')
 
 
 def filtered_select_comments(comments):
@@ -69,8 +74,9 @@ class PostListView(ListView):
     queryset = Post.objects.filter(
         pub_date__lte=now(),
         is_published=True,
+        category__is_published=True,
     ).annotate(comments_count=Count('comments'))
-    ordering = 'id'
+    ordering = '-pub_date'
     paginate_by = 10
     template_name = 'blog/index.html'
 
@@ -78,12 +84,18 @@ class PostListView(ListView):
 def post_detail(request, post_id):
     """Конструирует представление деталей публикации."""
     post = get_object_or_404(
-        filtered_select_posts(Post.objects),
+        filtered_select_posts(Post.objects, for_detail_view=True),
         id=post_id
     )
+
+    if (not post.is_published) or (not post.category.is_published):
+        if post.author != request.user:
+            return HttpResponseNotFound()
+
     comments = filtered_select_comments(
         Comment.objects,
     ).filter(post_id=post_id)
+    form = CommentAddForm()
 
     return render(
         request,
@@ -92,7 +104,7 @@ def post_detail(request, post_id):
             'post': post,
             'comments': comments,
             'user': request.user,
-            'form': CommentAddForm,
+            'form': form,
         },
     )
 
@@ -120,7 +132,7 @@ def profile(request, username):
         author=profile.id,
     ).annotate(
         comments_count=Count('comments'),
-    ).order_by('id')
+    ).order_by('-pub_date')
     paginator = Paginator(page_objs, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
