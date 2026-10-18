@@ -1,12 +1,7 @@
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.shortcuts import render
-from django.views.generic import (
-    CreateView,
-    DetailView,
-    ListView,
-    TemplateView,
-    UpdateView,
-)
+from django.views.generic import (CreateView, DetailView, ListView,
+                                  TemplateView, UpdateView)
 
 from .forms import StaticPageForm
 from .models import StaticPage
