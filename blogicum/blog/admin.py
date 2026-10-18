@@ -9,6 +9,7 @@ admin.site.unregister(User)
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
+    """Админ-панель для пользователей."""
     list_display = ('id', 'username', 'email', 'first_name',
                     'last_name', 'posts_count')
     search_fields = ('username', 'email')
@@ -26,6 +27,7 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
+    """Админ-панель для управления публикациями."""
     search_fields = ('text', )
     list_display = ('id', 'title', 'author', 'text', 'category',
                     'pub_date', 'location', 'is_published', 'created_at')
@@ -37,6 +39,7 @@ class PostAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
+    """Админ-панель для категорий."""
     search_fields = ('title', )
     list_display = ('pk', 'title', 'description', 'slug',
                     'is_published', 'created_at')
@@ -47,6 +50,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Location)
 class LocationAdmin(admin.ModelAdmin):
+    """Админ-панель для локаций."""
     search_fields = ('name', )
     list_display = ('pk', 'name', 'is_published', 'created_at')
     list_editable = ('is_published', )
