@@ -3,6 +3,7 @@ from django.db import models
 
 class StaticPage(models.Model):
     """Модель статичной страницы."""
+
     title = models.CharField("Заголовок", max_length=200)
     slug = models.SlugField(
         "URL-идентификатор",

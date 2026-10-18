@@ -65,11 +65,13 @@ def filtered_select_posts(posts, for_detail_view=False):
 
 def filtered_select_comments(comments):
     """Фильтр комментариев."""
+
     return comments.select_related('post', 'author').order_by('created_at')
 
 
 class PostListView(ListView):
     """Конструктор списка публикаций."""
+
     model = Post
     queryset = Post.objects.filter(
         pub_date__lte=now(),
@@ -83,6 +85,7 @@ class PostListView(ListView):
 
 def post_detail(request, post_id):
     """Конструирует представление деталей публикации."""
+
     post = get_object_or_404(
         filtered_select_posts(Post.objects, for_detail_view=True),
         id=post_id
@@ -111,6 +114,7 @@ def post_detail(request, post_id):
 
 def category_posts(request, category_slug):
     """Конструирует список публикаций в категории."""
+
     category = get_object_or_404(
         Category, slug=category_slug, is_published=True,
     )
@@ -127,6 +131,7 @@ def category_posts(request, category_slug):
 
 def profile(request, username):
     """Конструирует список публикаций пользователя."""
+
     profile = get_object_or_404(User, username=username)
     page_objs = Post.objects.filter(
         author=profile.id,
@@ -142,6 +147,7 @@ def profile(request, username):
 
 class UserUpdateView(OnlySelfMixin, UpdateView):
     """Конструктор обновления профиля пользователя."""
+
     model = User
     form_class = UserForm
     template_name = 'blog/user.html'
@@ -153,6 +159,7 @@ class UserUpdateView(OnlySelfMixin, UpdateView):
 
 class PostCreateView(LoginRequiredMixin, CreateView):
     """Конструктор создания публикации."""
+
     model = Post
     form_class = PostCreateForm
     template_name = 'blog/create.html'
@@ -170,6 +177,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 
 class PostUpdateView(OnlyAuthorMixin, UpdateView):
     """Конструктор редактирования публикации."""
+
     model = Post
     form_class = PostCreateForm
     template_name = 'blog/create.html'
@@ -188,6 +196,7 @@ class PostUpdateView(OnlyAuthorMixin, UpdateView):
 @login_required
 def add_comment(request, post_id):
     """Конструирует представление формы добавления комментария к публикации."""
+
     post = get_object_or_404(Post, id=post_id)
     form = CommentAddForm(request.POST)
 
@@ -202,6 +211,7 @@ def add_comment(request, post_id):
 
 class CommentEditView(OnlyCommentAuthorMixin, UpdateView):
     """Конструктор редактирования комментария к публикации."""
+
     model = Comment
     form_class = CommentAddForm
     template_name = 'blog/comment.html'
@@ -219,6 +229,7 @@ class CommentEditView(OnlyCommentAuthorMixin, UpdateView):
 
 class PostDeleteView(OnlyAuthorMixin, DeleteView):
     """Конструктор удаления публикации."""
+
     model = Post
     template_name = 'blog/create.html'
     success_url = reverse_lazy('blog:index')
@@ -227,6 +238,7 @@ class PostDeleteView(OnlyAuthorMixin, DeleteView):
 
 class CommentDeleteView(OnlyCommentAuthorMixin, DeleteView):
     """Конструктор удаления комментария."""
+
     model = Comment
     template_name = 'blog/comment.html'
 

@@ -5,6 +5,7 @@ from .models import StaticPage
 
 class StaticPageForm(forms.ModelForm):
     """Форма создания статичной страницы."""
+
     class Meta:
         model = StaticPage
         fields = ['title', 'slug', 'content', 'is_published']
