@@ -51,6 +51,7 @@ class OnlyCommentAuthorMixin(UserPassesTestMixin):
 
 
 def filtered_select_posts(posts, for_detail_view=False):
+    """Фильтр публикаций."""
     qs = posts.select_related('author', 'category', 'location')
 
     if not for_detail_view:
@@ -65,7 +66,6 @@ def filtered_select_posts(posts, for_detail_view=False):
 
 def filtered_select_comments(comments):
     """Фильтр комментариев."""
-
     return comments.select_related('post', 'author').order_by('created_at')
 
 
@@ -85,7 +85,6 @@ class PostListView(ListView):
 
 def post_detail(request, post_id):
     """Конструирует представление деталей публикации."""
-
     post = get_object_or_404(
         filtered_select_posts(Post.objects, for_detail_view=True),
         id=post_id
@@ -114,7 +113,6 @@ def post_detail(request, post_id):
 
 def category_posts(request, category_slug):
     """Конструирует список публикаций в категории."""
-
     category = get_object_or_404(
         Category, slug=category_slug, is_published=True,
     )
@@ -131,7 +129,6 @@ def category_posts(request, category_slug):
 
 def profile(request, username):
     """Конструирует список публикаций пользователя."""
-
     profile = get_object_or_404(User, username=username)
     page_objs = Post.objects.filter(
         author=profile.id,
@@ -196,7 +193,6 @@ class PostUpdateView(OnlyAuthorMixin, UpdateView):
 @login_required
 def add_comment(request, post_id):
     """Конструирует представление формы добавления комментария к публикации."""
-
     post = get_object_or_404(Post, id=post_id)
     form = CommentAddForm(request.POST)
 
