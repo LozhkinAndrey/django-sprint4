@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 
 
 class StaticPage(models.Model):
@@ -27,4 +28,4 @@ class StaticPage(models.Model):
         return self.title
 
     def get_absolute_url(self):
-        return f"/{self.slug}/"
+        return reverse('cms_static_page', kwargs={'slug': self.slug})

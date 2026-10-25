@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
+from django.db import models
+from django.utils.html import format_html
 
 from .models import Category, Location, Post, User
 
@@ -30,13 +32,34 @@ class UserAdmin(BaseUserAdmin):
 class PostAdmin(admin.ModelAdmin):
     """Админ-панель для управления публикациями."""
 
+    image = models.ImageField(upload_to='post_images')
     search_fields = ('text', )
-    list_display = ('id', 'title', 'author', 'text', 'category',
-                    'pub_date', 'location', 'is_published', 'created_at')
-    list_display_links = ('title',)
+    list_display = ('id', 'title', 'category', 'location', 'text', 'image_tag',
+                    'author', 'created_at', 'pub_date', 'is_published')
+    list_display_links = ('title', )
     list_editable = ('category', 'is_published', 'location')
     list_filter = ('created_at', )
     empty_value_display = '-пусто-'
+    readonly_fields = ('image_tag', )
+
+    def image_tag(self, post):
+        if post.image:
+            return format_html(
+                '<img src="{}" width="200" height="200" />',
+                post.image.url,
+            )
+
+    image_tag.short_description = 'Изображение'
+
+    fieldsets = (
+        (None, {
+            'fields': ('title',
+                       ('category', 'location'),
+                       ('text', 'image_tag'),
+                       'author',
+                       ('pub_date', 'is_published'))
+        }),
+    )
 
 
 @admin.register(Category)

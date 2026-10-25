@@ -11,7 +11,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('cms/', include('pages.cms_urls')),
     path('pages/', include('pages.urls', namespace='pages')),
-    path('', include('blog.urls', namespace='blog')),
     path('auth/', include('django.contrib.auth.urls')),
     path(
         'auth/registration/',
@@ -23,7 +22,14 @@ urlpatterns = [
         name='registration',
     ),
     path('profile/<username>/', views.profile, name='profile'),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('', include('blog.urls', namespace='blog')),
+]
+
+if settings.DEBUG:
+    urlpatterns += static(
+        settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROOT,
+    )
 
 handler404 = 'pages.views.page_not_found'
 handler500 = 'pages.views.internal_server_error'

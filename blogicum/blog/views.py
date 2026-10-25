@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.db.models import Count
 from django.http import HttpResponseNotFound
@@ -8,65 +8,11 @@ from django.urls import reverse, reverse_lazy
 from django.utils.timezone import now
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
+from core.constants import PAGE_COUNT
 from .forms import CommentAddForm, PostCreateForm, UserForm
+from .mixins import OnlyAuthorMixin, OnlyCommentAuthorMixin, OnlySelfMixin
 from .models import Category, Comment, Post, User
-
-
-class OnlySelfMixin(UserPassesTestMixin):
-    """Миксин проверки собственника профиля."""
-
-    def test_func(self):
-        if not self.request.user.is_authenticated:
-            return False
-        obj = self.get_object()
-        return obj.id == self.request.user.id
-
-
-class OnlyAuthorMixin(UserPassesTestMixin):
-    """Миксин проверка автора публикации."""
-
-    def test_func(self):
-        obj = self.get_object()
-        return obj is not None and obj.author_id == self.request.user.id
-
-    def handle_no_permission(self):
-        obj = self.get_object()
-        if obj:
-            return redirect('blog:post_detail', post_id=obj.id)
-        return redirect('blog:index')
-
-
-class OnlyCommentAuthorMixin(UserPassesTestMixin):
-    """Миксин проверки автора комментария."""
-
-    def test_func(self):
-        obj = self.get_object()
-        return obj is not None and obj.author == self.request.user
-
-    def handle_no_permission(self):
-        obj = self.get_object()
-        if obj:
-            return redirect('blog:post_detail', post_id=obj.post_id)
-        return redirect('blog:index')
-
-
-def filtered_select_posts(posts, for_detail_view=False):
-    """Фильтр публикаций."""
-    qs = posts.select_related('author', 'category', 'location')
-
-    if not for_detail_view:
-        qs = qs.filter(
-            is_published=True,
-            pub_date__lte=now(),
-            category__is_published=True,
-        )
-
-    return qs.annotate(comments_count=Count('comments')).order_by('-pub_date')
-
-
-def filtered_select_comments(comments):
-    """Фильтр комментариев."""
-    return comments.select_related('post', 'author').order_by('created_at')
+from .service import filtered_select_posts, get_paginate_objects
 
 
 class PostListView(ListView):
@@ -79,7 +25,7 @@ class PostListView(ListView):
         category__is_published=True,
     ).annotate(comments_count=Count('comments'))
     ordering = '-pub_date'
-    paginate_by = 10
+    paginate_by = PAGE_COUNT
     template_name = 'blog/index.html'
 
 
@@ -94,9 +40,7 @@ def post_detail(request, post_id):
         if post.author != request.user:
             return HttpResponseNotFound()
 
-    comments = filtered_select_comments(
-        Comment.objects,
-    ).filter(post_id=post_id)
+    comments = post.comments.all().order_by('created_at')
     form = CommentAddForm()
 
     return render(
@@ -117,9 +61,8 @@ def category_posts(request, category_slug):
         Category, slug=category_slug, is_published=True,
     )
     posts = filtered_select_posts(category.posts)
-    paginator = Paginator(posts, 10)
     page_number = request.GET.get('page')
-    post_list = paginator.get_page(page_number)
+    post_list = get_paginate_objects(posts, page_number)
     return render(request, 'blog/category.html', {
         'post_list': post_list,
         'category': category,
@@ -135,9 +78,8 @@ def profile(request, username):
     ).annotate(
         comments_count=Count('comments'),
     ).order_by('-pub_date')
-    paginator = Paginator(page_objs, 10)
     page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj = get_paginate_objects(page_objs, page_number)
     context = {'profile': profile, 'page_obj': page_obj}
     return render(request, 'blog/profile.html', context)
 
@@ -178,10 +120,7 @@ class PostUpdateView(OnlyAuthorMixin, UpdateView):
     model = Post
     form_class = PostCreateForm
     template_name = 'blog/create.html'
-
-    def get_object(self, queryset=None):
-        id = self.kwargs['post_id']
-        return get_object_or_404(Post, id=id)
+    pk_url_kwarg = 'post_id'
 
     def get_success_url(self):
         return reverse(
@@ -211,10 +150,7 @@ class CommentEditView(OnlyCommentAuthorMixin, UpdateView):
     model = Comment
     form_class = CommentAddForm
     template_name = 'blog/comment.html'
-
-    def get_object(self, queryset=None):
-        id = self.kwargs['comment_id']
-        return get_object_or_404(Comment, id=id)
+    pk_url_kwarg = 'comment_id'
 
     def get_success_url(self):
         return reverse(
@@ -237,10 +173,7 @@ class CommentDeleteView(OnlyCommentAuthorMixin, DeleteView):
 
     model = Comment
     template_name = 'blog/comment.html'
-
-    def get_object(self, queryset=None):
-        id = self.kwargs['comment_id']
-        return get_object_or_404(Comment, id=id)
+    pk_url_kwarg = 'comment_id'
 
     def get_success_url(self):
         return reverse(

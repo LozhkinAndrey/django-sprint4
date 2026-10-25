@@ -29,9 +29,6 @@ class PostCreateForm(forms.ModelForm):
             'category': forms.Select(),
         }
 
-    def clean(self):
-        return super().clean()
-
 
 class CommentAddForm(forms.ModelForm):
     """Порма добавления комментария."""

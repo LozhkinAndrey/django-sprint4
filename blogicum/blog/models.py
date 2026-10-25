@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.urls import reverse
 
 from core.constants import FIELDS_MAX_LENGTH, STR_LENGTH
 from core.models import PublishedAndCreatedAt
@@ -14,8 +15,10 @@ class Category(PublishedAndCreatedAt):
     description = models.TextField('Описание')
     slug = models.SlugField(
         'Идентификатор',
-        help_text='Идентификатор страницы для URL; разрешены символы '
-                  'латиницы, цифры, дефис и подчёркивание.',
+        help_text=(
+            'Идентификатор страницы для URL; разрешены символы '
+            'латиницы, цифры, дефис и подчёркивание.'
+        ),
         unique=True
     )
 
@@ -79,6 +82,9 @@ class Post(PublishedAndCreatedAt):
     def __str__(self) -> str:
         return self.title[:STR_LENGTH]
 
+    def get_absolute_url(self):
+        return reverse('blog:post_detail', kwargs={'post_id': self.id})
+
 
 class Comment(models.Model):
     """Модель комментария."""
@@ -87,7 +93,6 @@ class Comment(models.Model):
         Post,
         on_delete=models.CASCADE,
         verbose_name='Публикация',
-        related_name='comments',
     )
     author = models.ForeignKey(
         User,
@@ -101,3 +106,10 @@ class Comment(models.Model):
         verbose_name = 'комментарий'
         verbose_name_plural = 'Комментарии'
         ordering = ('-created_at', )
+        default_related_name = 'comments'
+
+    def __str__(self) -> str:
+        return (
+            f'{self.text[:STR_LENGTH]}... Author: {self.author.username}. '
+            f'Post: {self.post.title[:STR_LENGTH]}...'
+        )
