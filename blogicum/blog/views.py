@@ -19,12 +19,7 @@ class PostListView(ListView):
     """Конструктор списка публикаций."""
 
     model = Post
-    queryset = Post.objects.filter(
-        pub_date__lte=now(),
-        is_published=True,
-        category__is_published=True,
-    ).annotate(comments_count=Count('comments'))
-    ordering = '-pub_date'
+    queryset = filtered_select_posts(Post.objects)
     paginate_by = PAGE_COUNT
     template_name = 'blog/index.html'
 
@@ -36,9 +31,12 @@ def post_detail(request, post_id):
         id=post_id
     )
 
-    if (not post.is_published) or (not post.category.is_published):
-        if post.author != request.user:
-            return HttpResponseNotFound()
+    if post.author != request.user and (
+        post.pub_date > now()
+        or not post.category.is_published
+        or not post.is_published
+    ):
+        return HttpResponseNotFound()
 
     comments = post.comments.all().order_by('created_at')
     form = CommentAddForm()
@@ -73,11 +71,10 @@ def category_posts(request, category_slug):
 def profile(request, username):
     """Конструирует список публикаций пользователя."""
     profile = get_object_or_404(User, username=username)
-    page_objs = Post.objects.filter(
-        author=profile.id,
-    ).annotate(
-        comments_count=Count('comments'),
-    ).order_by('-pub_date')
+    page_objs = filtered_select_posts(
+        profile.posts,
+        for_detail_view=(request.user == profile),
+    )
     page_number = request.GET.get('page')
     page_obj = get_paginate_objects(page_objs, page_number)
     context = {'profile': profile, 'page_obj': page_obj}
@@ -166,6 +163,13 @@ class PostDeleteView(OnlyAuthorMixin, DeleteView):
     template_name = 'blog/create.html'
     success_url = reverse_lazy('blog:index')
     pk_url_kwarg = 'post_id'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        post = self.object
+        context['post'] = post
+        context['form'] = PostCreateForm(instance=post)
+        return context
 
 
 class CommentDeleteView(OnlyCommentAuthorMixin, DeleteView):
